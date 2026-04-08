@@ -1,50 +1,69 @@
 import os
 import json
+import sys
 from openai import OpenAI
 from env.environment import EmailEnv
 
-
 os.environ["OPENAI_API_KEY"] = "REPLACE_WITH_YOUR_KEY"
-os.environ["API_BASE_URL"] = "https://api.groq.com/openai/v1"
-os.environ["MODEL_NAME"] = "llama-3.1-8b-instant"
+
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api.groq.com/openai/v1")
+MODEL = os.getenv("MODEL_NAME", "llama-3.1-8b-instant")
 
 client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    base_url=os.getenv("API_BASE_URL")
+    api_key=os.getenv("OPENAI_API_KEY", "").strip(), 
+    base_url=API_BASE_URL
 )
-
-MODEL = os.getenv("MODEL_NAME")
 
 
 def call_llm(email):
     prompt = f"""
 You are an email assistant.
-
 Email: {email['text']}
 Sender: {email['sender']}
-
 Return ONLY valid JSON:
 {{
-  "label": "spam | urgent | normal",
+  "label": one of ["spam", "urgent", "normal"],
   "response": "text"
 }}
+Rules:
+- spam → response MUST be ""
+- urgent → include "soon" or "immediately"
+- normal → polite short reply
+Do NOT include anything except JSON.
 """
 
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0
-    )
-
-    text = response.choices[0].message.content.strip()
-
     try:
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0
+        )
+
+        text = response.choices[0].message.content.strip()
+
         data = json.loads(text)
+
+        label = data.get("label", "normal").lower().strip()
+
+        
+        if label not in ["spam", "urgent", "normal"]:
+            label = "normal"
+
+        response_text = data.get("response", "")
+
+        
+        if label == "spam":
+            response_text = ""
+        elif label == "urgent" and ("soon" not in response_text.lower() and "immediately" not in response_text.lower()):
+            response_text += " I will handle this immediately."
+
         return {
-            "label": data.get("label", "normal"),
-            "response": data.get("response", "")
+            "label": label,
+            "response": response_text
         }
+
     except:
+        
         return {"label": "normal", "response": ""}
 
 
@@ -74,5 +93,20 @@ def run_task(task_id):
 
 
 if __name__ == "__main__":
+    lock_file = "/tmp/executed.lock"
+
+    
+    if os.path.exists(lock_file):
+        sys.exit(0)
+
+    
+    with open(lock_file, "w") as f:
+        f.write("done")
+
     for task in ["easy", "medium", "hard"]:
         run_task(task)
+
+    sys.exit(0)
+
+
+
