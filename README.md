@@ -1,33 +1,40 @@
-# Smart Email Assistant (OpenEnv)
+---
+title: OpenEnv Email Triage
+emoji: 📧
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_file: app.py
+pinned: false
+---
 
-## Description
-Simulates real-world email triage tasks including classification and response generation.
+# 📧 OpenEnv Email Triage Environment
 
-## Tasks
-- Easy: classify emails
-- Medium: classify + respond
-- Hard: full inbox handling
+## 🚀 Description
+This project implements a real-world **email triage environment** using the OpenEnv specification.  
+An AI agent classifies emails (spam, urgent, normal) and generates responses.
 
-## Observation Space
+---
+
+## 🧠 Tasks
+
+### Easy
+- Classify emails (spam / normal)
+
+### Medium
+- Classify + generate response
+
+### Hard
+- Full inbox processing with mixed scenarios
+
+---
+
+## 📥 Observation Space
+
+```json
 {
-  "inbox": [...],
-  "current_index": int
+  "inbox": [
+    {"text": "string", "sender": "string"}
+  ],
+  "current_index": 0
 }
-
-## Action Space
-{
-  "label": "spam | urgent | normal",
-  "response": "string"
-}
-
-## Reward
-- Correct classification → +0.5
-- Response quality → +0.2 to +0.3
-- Penalty for wrong classification
-
-## Run
-python inference.py
-
-## Docker
-docker build -t email-env .
-docker run email-env
