@@ -1,0 +1,14 @@
+name: smart-email-env
+version: 2.0
+
+description: Multi-step email triage and response environment
+
+entry_point: env.environment:EmailEnv
+
+tasks:
+  - id: easy
+    description: classify emails
+  - id: medium
+    description: classify + respond
+  - id: hard
+    description: full inbox handling
